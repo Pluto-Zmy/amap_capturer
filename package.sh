@@ -70,43 +70,42 @@ ZIP_PATH="$DIST_DIR/$ZIP_NAME"
 rm -rf "$DIST_DIR"
 mkdir -p "$DIST_DIR"
 
-# 必要文件清单：仅包含扩展运行时需要的文件
-FILES=(
-  "manifest.json"
-  "content/bridge.js"
-  "content/canvas-capturer.js"
-  "content/index.js"
-  "content/map-controller.js"
-  "content/panel.css"
-  "content/panel.js"
-  "content/route-reader.js"
-  "content/stitcher.js"
-  "service/background.js"
-  "assets/icons/icon16.png"
-  "assets/icons/icon48.png"
-  "assets/icons/icon128.png"
+# 通过 git ls-files 动态获取文件列表，新增代码文件无需手动维护脚本
+# 排除：构建产物、开发文档、测试文件、脚本自身
+EXCLUDE_PATTERNS=(
+  ':!:dist/*'
+  ':!:package.sh'
+  ':!:README.md'
+  ':!:.gitignore'
+  ':!:tests/*'
+  ':!:.claude/*'
 )
 
-# 校验
-MISSING=()
-for f in "${FILES[@]}"; do
-  if [ ! -f "$PROJECT_DIR/$f" ]; then
-    MISSING+=("$f")
-  fi
-done
-if [ ${#MISSING[@]} -gt 0 ]; then
-  echo "❌ 以下文件缺失："
-  for f in "${MISSING[@]}"; do printf '   - %s\n' "$f"; done
+FILES=()
+while IFS= read -r f; do
+  FILES+=("$f")
+done < <(git ls-files -- "${EXCLUDE_PATTERNS[@]}")
+
+if [ ${#FILES[@]} -eq 0 ]; then
+  echo "❌ git ls-files 返回为空，请确认在 git 仓库中运行"
   exit 1
 fi
-echo "📋 校验通过：${#FILES[@]} 个文件"
+
+# 确保 manifest.json 在列表中
+if ! printf '%s\n' "${FILES[@]}" | grep -qx 'manifest.json'; then
+  echo "❌ manifest.json 未在打包列表中，请确认已 git add"
+  exit 1
+fi
+
+echo "📋 已发现 ${#FILES[@]} 个文件："
+printf '   %s\n' "${FILES[@]}"
+echo ""
 
 # 打包
-echo ""
 echo "🧹 正在打包..."
 (
   cd "$PROJECT_DIR"
-  zip -X "$ZIP_PATH" "${FILES[@]}" -x "*.DS_Store"
+  zip -X "$ZIP_PATH" "${FILES[@]}"
 )
 
 if [ -f "$ZIP_PATH" ]; then
