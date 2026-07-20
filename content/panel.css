@@ -1,0 +1,308 @@
+/* content/panel.css */
+/* Amap Map Screenshot Stitching — Side Panel Styles */
+
+#bmap-panel-root {
+  position: fixed;
+  top: 80px;
+  right: 16px;
+  width: 280px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  z-index: 99999;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  color: #333;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  user-select: none;
+}
+
+#bmap-panel-root.bmap-collapsed #bmap-panel-inner {
+  display: none;
+}
+
+#bmap-panel-root.bmap-collapsed {
+  width: auto;
+  box-shadow: none;
+  background: none;
+  overflow: visible;
+}
+
+#bmap-panel-inner {
+  padding: 16px;
+}
+
+.bmap-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.bmap-panel-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.bmap-panel-toggle {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #999;
+  border-radius: 6px;
+  line-height: 28px;
+  text-align: center;
+}
+
+.bmap-panel-toggle:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.bmap-panel-section {
+  margin-bottom: 14px;
+}
+
+.bmap-panel-section label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #666;
+}
+
+.bmap-zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bmap-zoom-slider {
+  flex: 1;
+  accent-color: #4285f4;
+}
+
+.bmap-zoom-value {
+  width: 28px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.bmap-mode-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.bmap-mode-option input[type="radio"] {
+  accent-color: #4285f4;
+}
+
+.bmap-group-size {
+  width: 56px;
+  padding: 2px 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-left: 4px;
+}
+
+.bmap-group-size:disabled {
+  background: #f5f5f5;
+  color: #999;
+}
+
+.bmap-route-info {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.bmap-route-info .bmap-label {
+  color: #666;
+}
+
+.bmap-route-info .bmap-value {
+  color: #333;
+  font-weight: 500;
+}
+
+.bmap-btn {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.bmap-btn-primary {
+  background: #4285f4;
+  color: #fff;
+}
+
+.bmap-btn-primary:hover {
+  background: #3367d6;
+}
+
+.bmap-btn-primary:disabled {
+  background: #a8c7fa;
+  cursor: not-allowed;
+}
+
+.bmap-btn-danger {
+  background: #ea4335;
+  color: #fff;
+}
+
+.bmap-btn-danger:hover {
+  background: #d33426;
+}
+
+.bmap-btn-success {
+  background: #34a853;
+  color: #fff;
+}
+
+.bmap-btn-success:hover {
+  background: #2d9249;
+}
+
+.bmap-btn-success:disabled {
+  background: #a8d9b5;
+  cursor: not-allowed;
+}
+
+.bmap-progress {
+  margin-top: 10px;
+}
+
+.bmap-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #e8eaed;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bmap-progress-fill {
+  height: 100%;
+  background: #4285f4;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.bmap-progress-text {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #888;
+  text-align: center;
+}
+
+.bmap-error {
+  margin-top: 8px;
+  padding: 8px;
+  background: #fce8e6;
+  border-radius: 6px;
+  color: #c5221f;
+  font-size: 12px;
+}
+
+.bmap-warning {
+  margin-top: 8px;
+  padding: 8px;
+  background: #fef7e0;
+  border-radius: 6px;
+  color: #b06000;
+  font-size: 12px;
+}
+
+.bmap-minimized-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+  color: #333;
+  font-size: 18px;
+  text-align: center;
+  line-height: 40px;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e0e0e0;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  user-select: none;
+}
+
+.bmap-minimized-btn:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transform: scale(1.08);
+}
+
+#bmap-panel-root.bmap-collapsed .bmap-minimized-btn {
+  display: block;
+}
+
+.bmap-size-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.bmap-size-row span {
+  font-size: 12px;
+  color: #666;
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.bmap-size-input {
+  width: 62px;
+  padding: 2px 4px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.bmap-size-hint {
+  margin-top: 4px;
+  font-size: 10px;
+  color: #999;
+}
+
+.bmap-instructions {
+  background: #f0f7ff;
+  border: 1px solid #d0e3f7;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.bmap-instructions-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #3367d6;
+  margin-bottom: 6px;
+}
+
+.bmap-instructions-list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 11px;
+  color: #555;
+  line-height: 1.7;
+}

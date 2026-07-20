@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Stitcher Unit Tests</title>
+<style>
+  body { font-family: monospace; max-width: 800px; margin: 40px auto; }
+  .pass { color: green; } .fail { color: red; }
+  h2 { border-bottom: 2px solid #eee; padding-bottom: 4px; }
+</style>
+</head>
+<body>
+<h1>Stitcher Unit Tests</h1>
+<div id="results"></div>
+
+<script src="../content/stitcher.js"></script>
+<script src="../content/map-controller.js"></script>
+<script>
+const results = document.getElementById('results');
+let passed = 0, failed = 0;
+
+function assert(condition, name) {
+  if (condition) {
+    results.innerHTML += `<p class="pass">✓ PASS: ${name}</p>`;
+    passed++;
+  } else {
+    results.innerHTML += `<p class="fail">✗ FAIL: ${name}</p>`;
+    failed++;
+  }
+}
+
+function assertDeepEqual(actual, expected, name) {
+  const ok = JSON.stringify(actual) === JSON.stringify(expected);
+  if (ok) {
+    results.innerHTML += `<p class="pass">✓ PASS: ${name}</p>`;
+    passed++;
+  } else {
+    results.innerHTML += `<p class="fail">✗ FAIL: ${name}<br>  expected: ${JSON.stringify(expected)}<br>  actual:   ${JSON.stringify(actual)}</p>`;
+    failed++;
+  }
+}
+
+// Generate a solid-color ImageBitmap for testing (100x80 simulates real screenshot size)
+async function makeTestImage(r, g, b, w = 100, h = 80) {
+  const c = new OffscreenCanvas(w, h);
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = `rgb(${r},${g},${b})`;
+  ctx.fillRect(0, 0, w, h);
+  return c.transferToImageBitmap();
+}
+
+// Test suite
+async function runTests() {
+  // --- accumulatePositions ---
+  results.innerHTML += '<h2>accumulatePositions</h2>';
+
+  // Empty input
+  assertDeepEqual(accumulatePositions([]),
+    [{ x: 0, y: 0 }],
+    'empty offsets returns single origin position');
+
+  // Single offset
+  assertDeepEqual(accumulatePositions([{ x: 10, y: 20 }]),
+    [{ x: 0, y: 0 }, { x: 20, y: 40 }],
+    'single offset applied with SCALE=2');
+
+  // Multiple offsets accumulate
+  assertDeepEqual(accumulatePositions([{ x: 10, y: 20 }, { x: -5, y: 10 }]),
+    [{ x: 0, y: 0 }, { x: 20, y: 40 }, { x: 10, y: 60 }],
+    'multiple offsets accumulate correctly');
+
+  // --- computeCanvasBounds ---
+  results.innerHTML += '<h2>computeCanvasBounds</h2>';
+
+  const pos1 = [{ x: 0, y: 0 }];
+  assertDeepEqual(computeCanvasBounds(pos1, 100, 80),
+    { minX: 0, minY: 0, width: 100, height: 80 },
+    'single image: canvas equals image size');
+
+  const pos2 = [{ x: 0, y: 0 }, { x: 50, y: 30 }];
+  assertDeepEqual(computeCanvasBounds(pos2, 100, 80),
+    { minX: 0, minY: 0, width: 150, height: 110 },
+    'two images with positive offset');
+
+  const pos3 = [{ x: -30, y: -20 }, { x: 50, y: 30 }];
+  assertDeepEqual(computeCanvasBounds(pos3, 100, 80),
+    { minX: -30, minY: -20, width: 180, height: 130 },
+    'negative starting position handled correctly');
+
+  // --- stitchGroup ---
+  results.innerHTML += '<h2>stitchGroup</h2>';
+
+  // Single image: result should equal original
+  const img = await makeTestImage(255, 0, 0);
+  const blob = await stitchGroup([img], [], 100, 80);
+  assert(blob instanceof Blob, 'stitchGroup returns a Blob');
+  assert(blob.type === 'image/png', 'stitchGroup returns PNG blob');
+
+  // Two images: check canvas dimensions
+  const img1 = await makeTestImage(255, 0, 0);
+  const img2 = await makeTestImage(0, 255, 0);
+  const blob2 = await stitchGroup(
+    [img1, img2],
+    [{ x: 50, y: 0 }],
+    100, 80
+  );
+  assert(blob2 instanceof Blob, 'two-image stitchGroup returns a Blob');
+  // SCALE=2: offset={x:100, y:0}, canvas should be 200x80
+  const bitmap = await createImageBitmap(blob2);
+  assert(bitmap.width === 200, `two-image canvas width: ${bitmap.width} (expected 200)`);
+  assert(bitmap.height === 80, `two-image canvas height: ${bitmap.height} (expected 80)`);
+  bitmap.close();
+
+  // Three images with negative offset
+  const imgs = [
+    await makeTestImage(255, 0, 0),
+    await makeTestImage(0, 255, 0),
+    await makeTestImage(0, 0, 255),
+  ];
+  const offsets = [{ x: 50, y: 0 }, { x: -25, y: 30 }];
+  const blob3 = await stitchGroup(imgs, offsets, 100, 80);
+  const bm3 = await createImageBitmap(blob3);
+  // SCALE=2: pos0=(0,0), pos1=(100,0), pos2=(50,60)
+  // bounds: minX=0, maxX=150, minY=0, maxY=140
+  assert(bm3.width === 150, `three-image canvas width: ${bm3.width} (expected 150)`);
+  assert(bm3.height === 140, `three-image canvas height: ${bm3.height} (expected 140)`);
+  bm3.close();
+
+  // Mismatched array lengths: should throw
+  try {
+    await stitchGroup([img1, img2], [], 100, 80);
+    assert(false, 'mismatched lengths should throw');
+  } catch (e) {
+    assert(true, 'mismatched lengths throws as expected');
+  }
+
+  // Cleanup
+  [img, img1, img2, ...imgs].forEach(i => i.close());
+
+  // --- stitchByAuto grouping logic ---
+  results.innerHTML += '<h2>stitchByAuto</h2>';
+
+  // 2 small images: should NOT split
+  const imgsAuto = [await makeTestImage(255,0,0), await makeTestImage(0,255,0)];
+  const { blobs: blobsAuto } = await stitchByAuto(imgsAuto, [{x:10,y:0}], 100, 80);
+  assert(blobsAuto.length === 1, 'stitchByAuto: 2 small images produce 1 group');
+
+  // Empty images
+  const { blobs: blobsEmpty, warnings: warnsEmpty } = await stitchByAuto([], [], 100, 80);
+  assert(blobsEmpty.length === 0, 'stitchByAuto: empty images returns 0 blobs');
+  assert(warnsEmpty.length > 0, 'stitchByAuto: empty images returns warning');
+
+  // --- stitchByGroup ---
+  results.innerHTML += '<h2>stitchByGroup</h2>';
+
+  const imgsGrp = [
+    await makeTestImage(255,0,0), await makeTestImage(0,255,0),
+    await makeTestImage(0,0,255), await makeTestImage(128,128,128),
+  ];
+  const offsGrp = [{x:10,y:0}, {x:10,y:0}, {x:10,y:0}];
+  const { blobs: blobsGrp } = await stitchByGroup(imgsGrp, offsGrp, 100, 80, 2);
+  assert(blobsGrp.length === 2, 'stitchByGroup: 4 images groupSize=2 produces 2 groups');
+
+  // --- stitch() unified dispatch ---
+  results.innerHTML += '<h2>stitch() dispatch</h2>';
+
+  const r1 = await stitch('auto', imgsAuto, [{x:10,y:0}], 100, 80);
+  assert(r1.blobs.length === 1, 'stitch("auto") works');
+
+  const r2 = await stitch('all', imgsAuto, [{x:10,y:0}], 100, 80);
+  assert(r2.blobs.length === 1, 'stitch("all") works');
+
+  const r3 = await stitch('group', imgsGrp, offsGrp, 100, 80, 2);
+  assert(r3.blobs.length === 2, 'stitch("group", 2) works');
+
+  // Invalid group size should throw
+  try {
+    await stitch('group', imgsAuto, [{x:10,y:0}], 100, 80, 0);
+    assert(false, 'stitch("group", 0) should throw');
+  } catch (e) {
+    assert(true, 'stitch("group", 0) throws as expected');
+  }
+
+  // Default (unknown mode) should fall through to auto
+  const r4 = await stitch('unknown', imgsAuto, [{x:10,y:0}], 100, 80);
+  assert(r4.blobs.length === 1, 'stitch("unknown") falls through to auto');
+
+  // Cleanup
+  [imgsAuto, imgsGrp].flat().forEach(i => i.close());
+
+  // --- computeStepSequence ---
+  results.innerHTML += '<h2>computeStepSequence</h2>';
+
+  // Test 1: empty input
+  assertDeepEqual(computeStepSequence([], 3),
+    [], 'empty polyline returns empty steps');
+
+  // Test 2: single point
+  assertDeepEqual(computeStepSequence([[116.0, 40.0]], 3),
+    [[116.0, 40.0]], 'single point returns that point');
+
+  // Test 3: sample every 2nd (5 points → indices 0,2,4 + endpoint check)
+  var route = [[0,0],[1,1],[2,2],[3,3],[4,4]];
+  var s2 = computeStepSequence(route, 2);
+  assert(s2.length >= 3, 'sampleRate=2: ' + s2.length + ' steps (expected >=3)');
+  assertDeepEqual(s2[0], [0,0], 'first is start');
+  assertDeepEqual(s2[s2.length-1], [4,4], 'last is end');
+
+  // Test 4: sample every 1st = all points
+  var s1 = computeStepSequence(route, 1);
+  assert(s1.length === 5, 'sampleRate=1: ' + s1.length + ' steps (expected 5)');
+
+  // Test 5: sample rate > polyline length → just start + end
+  var sBig = computeStepSequence(route, 10);
+  assert(sBig.length === 2, 'sampleRate=10: ' + sBig.length + ' steps (expected 2)');
+
+  // --- Summary ---
+  results.innerHTML += `<h2>Results: ${passed}/${passed + failed} passed</h2>`;
+}
+
+runTests().catch(e => {
+  results.innerHTML += `<p class="fail">Test runner error: ${e.message}</p>`;
+});
+</script>
+</body>
+</html>

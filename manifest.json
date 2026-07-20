@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "高德地图截图拼接",
+  "version": "0.1.0",
+  "description": "沿高德地图路线自动截图并拼接为大地图",
+  "action": {
+    "default_title": "高德地图截图拼接",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "permissions": ["downloads", "activeTab"],
+  "host_permissions": ["*://*.amap.com/*", "<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["*://*.amap.com/*"],
+      "js": ["content/bridge.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.amap.com/*"],
+      "js": [
+        "content/stitcher.js",
+        "content/map-controller.js",
+        "content/canvas-capturer.js",
+        "content/route-reader.js",
+        "content/panel.js",
+        "content/index.js"
+      ],
+      "css": ["content/panel.css"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    }
+  ],
+  "background": {
+    "service_worker": "service/background.js"
+  },
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  }
+}
