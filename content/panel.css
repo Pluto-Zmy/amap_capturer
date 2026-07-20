@@ -99,12 +99,21 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 6px;
+  margin-bottom: 12px;
   cursor: pointer;
+  line-height: 1;
 }
 
 .bmap-mode-option input[type="radio"] {
   accent-color: #4285f4;
+  margin: 0;
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+}
+
+.bmap-mode-option label {
+  margin-bottom: 0;
 }
 
 .bmap-group-size {
