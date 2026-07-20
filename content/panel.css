@@ -175,6 +175,7 @@
 .bmap-btn-success {
   background: #34a853;
   color: #fff;
+  margin-top: 10px;
 }
 
 .bmap-btn-success:hover {
@@ -252,8 +253,50 @@
   transform: scale(1.08);
 }
 
+#bmap-panel-root.bmap-collapsed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 #bmap-panel-root.bmap-collapsed .bmap-minimized-btn {
   display: block;
+}
+
+/* Minimized progress bar — shown next to the collapsed button during capture */
+.bmap-minimized-progress {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  border: 1px solid #e8eaed;
+}
+
+.bmap-minimized-progress-bar {
+  width: 100px;
+  height: 4px;
+  background: #e8eaed;
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.bmap-minimized-progress-fill {
+  height: 100%;
+  background: #4285f4;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.bmap-minimized-progress-text {
+  font-size: 11px;
+  color: #666;
+  white-space: nowrap;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .bmap-size-row {

@@ -137,6 +137,12 @@ class SidePanel {
 
         <div id="bmap-message-area"></div>
       </div>
+      <div class="bmap-minimized-progress" id="bmap-minimized-progress">
+        <div class="bmap-minimized-progress-bar">
+          <div class="bmap-minimized-progress-fill" id="bmap-minimized-progress-fill"></div>
+        </div>
+        <span class="bmap-minimized-progress-text" id="bmap-minimized-progress-text"></span>
+      </div>
       <div class="bmap-minimized-btn" id="bmap-minimized-btn" title="展开面板">
         🗺️
       </div>
@@ -151,6 +157,7 @@ class SidePanel {
       'bmap-start-btn', 'bmap-download-btn',
       'bmap-progress-area', 'bmap-progress-fill', 'bmap-progress-text',
       'bmap-route-status', 'bmap-progress-count', 'bmap-message-area',
+      'bmap-minimized-progress', 'bmap-minimized-progress-fill', 'bmap-minimized-progress-text',
     ];
     for (const id of ids) {
       this.elements[id] = document.getElementById(id);
@@ -204,10 +211,16 @@ class SidePanel {
 
   _collapse() {
     this.root.classList.add('bmap-collapsed');
+    // Show minimized progress only when capturing
+    if (this.state === PanelState.CAPTURING) {
+      this.elements['bmap-minimized-progress'].style.display = 'flex';
+    }
   }
 
   _expand() {
     this.root.classList.remove('bmap-collapsed');
+    // Hide minimized progress — expanded panel has its own progress bar
+    this.elements['bmap-minimized-progress'].style.display = 'none';
   }
 
   onStart(callback) { this._startCallback = callback; }
@@ -218,6 +231,8 @@ class SidePanel {
     if (this.state === PanelState.CAPTURING) {
       if (this._cancelCallback) this._cancelCallback();
     } else {
+      // Auto-collapse panel to avoid appearing in captured screenshots
+      this._collapse();
       if (this._startCallback) this._startCallback();
     }
   }
@@ -231,14 +246,17 @@ class SidePanel {
     var btn = this.elements['bmap-start-btn'];
     var progressArea = this.elements['bmap-progress-area'];
     var downloadBtn = this.elements['bmap-download-btn'];
+    var minimizedProgress = this.elements['bmap-minimized-progress'];
 
     switch (state) {
       case PanelState.READY:
+        this._expand();
         btn.textContent = '开始截图';
         btn.className = 'bmap-btn bmap-btn-primary';
         btn.disabled = false;
         progressArea.style.display = 'none';
         downloadBtn.style.display = 'none';
+        minimizedProgress.style.display = 'none';
         this._setControlsEnabled(true);
         break;
       case PanelState.CAPTURING:
@@ -247,6 +265,7 @@ class SidePanel {
         btn.disabled = false;
         progressArea.style.display = 'block';
         downloadBtn.style.display = 'none';
+        minimizedProgress.style.display = 'flex';
         this._setControlsEnabled(false);
         break;
       case PanelState.DOWNLOADING:
@@ -258,17 +277,21 @@ class SidePanel {
         this._setControlsEnabled(false);
         break;
       case PanelState.DONE:
+        this._expand();
         btn.textContent = '重新开始';
         btn.className = 'bmap-btn bmap-btn-primary';
         btn.disabled = false;
         progressArea.style.display = 'block';
         downloadBtn.style.display = 'block';
+        minimizedProgress.style.display = 'none';
         this._setControlsEnabled(true);
         break;
       case PanelState.ERROR:
+        this._expand();
         btn.textContent = '重试';
         btn.className = 'bmap-btn bmap-btn-primary';
         btn.disabled = false;
+        minimizedProgress.style.display = 'none';
         this._setControlsEnabled(true);
         break;
     }
@@ -295,6 +318,9 @@ class SidePanel {
     this._updateProgressText();
     var pct = this.totalSteps > 0 ? Math.round((count / this.totalSteps) * 100) : 0;
     this.elements['bmap-progress-fill'].style.width = pct + '%';
+    // Sync minimized progress bar
+    this.elements['bmap-minimized-progress-fill'].style.width = pct + '%';
+    this.elements['bmap-minimized-progress-text'].textContent = count + ' / ' + this.totalSteps;
   }
 
   _updateProgressText() {
